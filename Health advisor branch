@@ -1,0 +1,112 @@
+#### Healthcare - multi agent workflow
+
+## install package
+!pip install -q google-generativeai
+
+
+#### import libraries
+
+import google.generativeai as genai
+from datetime import datetime
+from google.colab import userdata
+import os
+
+
+### configure API key
+
+
+GOOGLE_API_KEY = userdata.get('Google_API_key')
+genai.configure(api_key=GOOGLE_API_KEY)
+
+### load LLM model
+
+model = genai.GenerativeModel(
+    model_name="gemini-flash-latest", 
+    generation_config={"temperature": 0.3}
+)
+
+
+
+##### creating agent
+
+##### agent 1 - Health Checkup analyzer
+
+def health_agent(user_input):
+  print("\n[Health Analysis Agent]")
+
+  prompt = f"""
+  I am a Health advisor. 
+
+  - Analyze the body condition and classify risk level(Low, Medium, High). 
+  - List top 3 Health concerns.
+  - Keep the output concise to 3-4 lines only
+
+  Customer input:
+  {user_input}
+
+  """
+  response = model.generate_content(prompt)
+  print(response.text)
+  return response.text
+
+#### Agent 2 -  Medi Planner
+
+
+def planning_agent(health_summary):
+  print("\n[Wellness Planning Agent]")
+
+  prompt = f"""
+
+  I am a Wellness Planner.
+
+  - Based on risk summary, suggest the diet and medication.
+  - keep the output concise to 3-4 lines only and in bullet points
+
+  Summary:
+  {health_summary}
+
+  """
+  response = model.generate_content(prompt)
+  print(response.text)
+  return response.text
+
+### agent 3 - logging agent
+
+def logger_agent(name, cid, input_text, summary, plan, followups):
+  print("\n[Logger Agent] Printing Information")
+
+  log_entry = f"""
+
+  Time: {datetime.now()}
+  Name: {name}
+  Customer ID: {cid}
+
+  Health Input:
+  {input_text}
+
+  Health Summary:
+  {summary}
+
+  Wellness Plan:
+  {plan}
+
+  Follow-up Questions:
+  {followups}
+
+  """
+  with open("Health_advisor_log.txt", "a") as f:
+    f.write(log_entry)
+
+
+
+### define user input
+
+name = input("Enter your name: ")
+cid = input("Enter your customer ID: ")
+user_input = input("Enter your Health situation(age, height,weight, last checkup date, pre-existing conditions and medications):")
+
+#### run multi agent pipeline
+
+health_summary = health_agent(user_input)
+wellness_plan = planning_agent(health_summary) # Renamed 'followups' to 'wellness_plan' for clarity
+logger_agent(name, cid, user_input, health_summary, wellness_plan, followups) # Added an empty string for the missing 'followups' argument
